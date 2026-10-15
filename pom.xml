@@ -6,7 +6,7 @@
 
     <groupId>ai.myvocal</groupId>
     <artifactId>myvocal-multi-context-wss-sdk</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <packaging>jar</packaging>
 
     <name>MyVocal Multi-Context WSS SDK for Java</name>

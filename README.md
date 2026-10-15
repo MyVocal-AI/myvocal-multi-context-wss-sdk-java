@@ -1,70 +1,72 @@
-# MyVocal Multi-Context WSS SDK for Java
+# MyVocal Multi-Context TTS SDK for Java
 
-Official Java SDK for the MyVocal enterprise Multi-Context WebSocket TTS API.
+Requires Java 8 or later, an enterprise TTS API Key with dedicated concurrency, and a voice ID. Use one voice with up to five active synthesis contexts on a connection.
 
-## Runtime support
+## Install
 
-- Java 8, 11, 17, 21, and 25
-- The SDK JAR is compiled with `--release 8` and Java class major version 52.
-- The ZIP contains a thin JAR. Runtime dependencies are listed in
-  `DEPENDENCIES.md` and included under `lib/`.
-
-## Local ZIP installation
-
-Install the SDK JAR from the extracted official Release ZIP:
+Download and extract [SDK v1.0.1](https://github.com/MyVocal-AI/myvocal-multi-context-wss-sdk-java/releases/tag/v1.0.1). The `lib/` directory includes the SDK and its runtime dependencies. For Maven, install the JAR with the supplied POM:
 
 ```bash
-mvn install:install-file \
-  -Dfile=lib/myvocal-multi-context-wss-sdk-1.0.0.jar \
-  -DgroupId=ai.myvocal \
-  -DartifactId=myvocal-multi-context-wss-sdk \
-  -Dversion=1.0.0 \
-  -Dpackaging=jar
+mvn install:install-file -Dfile=lib/myvocal-multi-context-wss-sdk-1.0.1.jar -DpomFile=pom.xml
 ```
 
-The artifact is not published to Maven Central.
+Add this dependency to your application:
 
-## Minimal flow
-
-```java
-import ai.myvocal.multiwss.ConnectionOptions;
-import ai.myvocal.multiwss.ContextOptions;
-import ai.myvocal.multiwss.MultiContextClient;
-import ai.myvocal.multiwss.TtsContext;
-
-import java.util.concurrent.TimeUnit;
-
-public final class Example {
-    public static void main(String[] args) throws Exception {
-        MultiContextClient client = new MultiContextClient(
-                "wss://api.voicelibrary.co",
-                System.getenv("MYVOCAL_TTS_API_KEY"),
-                System.getenv("MYVOCAL_VOICE_ID"));
-        try {
-            client.connect(ConnectionOptions.builder()
-                    .languageCode("en")
-                    .idleTimeout(120)
-                    .build());
-            TtsContext context = client.createContext(
-                    "turn_1",
-                    ContextOptions.builder().build());
-            context.initialize();
-            context.sendText("Hello from MyVocal.", false);
-            context.flush();
-            context.close();
-            context.awaitFinal(60, TimeUnit.SECONDS);
-        } finally {
-            client.disconnect();
-        }
-    }
-}
+```xml
+<dependency>
+  <groupId>ai.myvocal</groupId>
+  <artifactId>myvocal-multi-context-wss-sdk</artifactId>
+  <version>1.0.1</version>
+</dependency>
 ```
 
-Normal completion is `flush -> close_context -> is_final`. Calling
-`close_context` without `flush` is cancellation and does not implicitly flush
-buffered text. An empty final audio field is a valid completion frame.
+The SDK is not available on Maven Central. For a manual classpath, include every JAR in `lib/`; see [runtime dependencies](DEPENDENCIES.md).
 
-Customer callbacks run outside OkHttp's reader thread. Callback exceptions are
-reported through `onCallbackError` and do not convert successful synthesis into
-a transport failure. The SDK never reconnects and never replays text
-automatically.
+## Models and audio
+
+Supported models: `flash_v2_5` and `multilingual_v2`. The example uses `flash_v2_5` with `pcm_16000`; edit its connection options to use another supported model or format.
+
+`myvocal_v4` and `myvocal_v3_turbo` require the [dialogue SDKs](https://api-docs.myvocal.ai/3892090w0) and are not supported by this endpoint.
+
+## Run the example
+
+Set your Key and voice ID:
+
+```bash
+export MYVOCAL_TTS_API_KEY='YOUR_API_KEY'
+export MYVOCAL_VOICE_ID='YOUR_VOICE_ID'
+```
+
+PowerShell:
+
+```powershell
+$env:MYVOCAL_TTS_API_KEY='YOUR_API_KEY'
+$env:MYVOCAL_VOICE_ID='YOUR_VOICE_ID'
+```
+
+From the extracted folder, on macOS/Linux:
+
+```bash
+javac -cp "lib/*" examples/BasicExample.java
+java -cp "lib/*:examples" BasicExample
+```
+
+On Windows:
+
+```powershell
+javac -cp "lib/*" examples/BasicExample.java
+java -cp "lib/*;examples" BasicExample
+```
+
+Running the example makes a real synthesis request and consumes character usage. It reports audio byte counts; add file or playback handling to consume the audio.
+
+## Use in your application
+
+- Normal completion requires flush, context closure, and a final event. Closing a context without flushing is cancellation.
+- [Usage guide](USAGE.md): options, audio callbacks, completion, cancellation, timeouts, and errors.
+- [API reference](https://api-docs.myvocal.ai/3758588w0): supported fields and messages.
+- [Character usage](https://api-docs.myvocal.ai/336818975e0).
+
+The SDK does not automatically reconnect or replay text.
+
+Licensed under [Apache License 2.0](LICENSE). Dependency notices are in [NOTICE](NOTICE).
